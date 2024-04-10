@@ -278,6 +278,8 @@ k -n longhorn-system get po -w
 ```
 
 
+OpenEBS als Alternative in AWS
+
 
 
 ## Monitoring
@@ -451,6 +453,179 @@ Installing SonarQube using Helm
 ```
 helm install stable/sonarqube --name sonar --namespace sonarqube
 ```
+
+
+
+
+## RBAC
+
+Using RBAC to harden cluster security
+```
+Make sure you have an RBAC-enabled Kubernetes cluster ready (since Kubernetes 1.6, RBAC is enabled by default) 
+
+vi /etc/kubernetes/manifests/kube-apiserver.yaml
+
+
+$ git clone https://github.com/k8sdevopscookbook/src.git
+            $ cd src/chapter9/rbac
+
+RBAC is enabled by default starting with Kubernetes 1.6. If it is disabled for any reason, start the API server with --authorization-mode=RBAC to enable RBAC
+
+Viewing the default Roles
+$ kubectl get clusterroles
+            $ kubectl get clusterrolebindings
+
+have a example look
+kubectl get clusterroles system:node -oyaml
+
+Let's view the default user-facing roles since they are the ones we are more interested in. The roles that don't have the system: prefix are intended to be user-facing roles.
+kubectl get clusterroles | grep -v '^system'
+
+
+Now, review the default cluster binding, that is, cluster-admin, using the following command. You will see that this binding gives the system:masters group cluster-wide superuser permissions with the cluster-admin role:
+kubectl get clusterrolebindings/cluster-admin -o yaml
+
+
+Since the Kubernetes 1.6 release, RBAC is enabled by default and new users can be created and start with no permissions until permissions are assigned by an admin user to a specific resource. Now, you know about the available default roles.
+In the following recipes, you will learn how to create new Roles and RoleBindings and grant accounts the permissions that they need.
+```
+
+
+
+
+Creating user accounts
+```
+Create a private key
+openssl genrsa -out user3445.key 2048
+
+Create a certificate sign request (CSR)
+openssl req -new -key user3445.key -out user3445.csr -subj "/CN=john.geek/O=development"
+
+
+To use the built-in signer, you need to locate the cluster-signing certificates for your cluster. By default, the ca.crt and ca.key files should be in the /etc/kubernetes/pki/ directory
+
+
+Once you've located the keys, change the CERT_LOCATION mentioned in the following code to the current location of the files and generate the final signed certificate:
+
+$ openssl x509 -req -in user3445.csr \
+           -CA /etc/kubernetes/pki/ca.crt \
+           -CAkey /etc/kubernetes/pki/ca.key \
+           -CAcreateserial -out user3445.crt \
+           -days 500
+
+If all the files have been located, the command in Step 3 should return an output similar to the following:
+Signature ok
+subject=CN = john.geek, O = development
+Getting CA Private Key
+
+Before we move on, make sure you store the signed keys in a safe directory. As an industry best practice, using a secrets engine or Vault storage is recommended. You will learn more about Vault storage later in this chapter IN the Securing credentials using HashiCorp Vault recipe
+
+Create a new context using the new user credentials:
+$ kubectl config set-credentials user3445 --client-certificate=user3445.crt --client-key=user3445.key
+$ kubectl config set-context user3445-context --cluster=local --namespace=secureapp --user=user3445
+kubectl config get-contexts
+
+
+List the existing context. You will see that the new user3445-context has been created:
+kubectl config get-contexts          
+
+
+Now, try to list the pods using the new user context.
+You will get an access denied error since the new user doesn't have any roles and new users don't come with any roles assigned to them by default:
+kubectl --context=user3445-context get pods
+
+
+Optionally, you can base64 encode all three files (user3445.crt, user3445.csr, and user3445.key) using the openssl base64 -in <infile> -out <outfile> command and distribute the populated config- user3445.yml file to your developers. An example file can be found in this book's GitHub repository in the src/chapter9/rbac directory. There are many ways to distribute user credentials. Review the example using your text editor:
+cat config-user3445.yaml
+
+With that, you've learned how to create new users. Next, you will create roles and assign them to the user.
+
+```
+
+
+
+
+Creating Roles and RoleBindings
+```
+Roles and RolesBindings are always used in a defined namespace, meaning that the permissions can only be granted for the resources that are in the same namespace as the Roles and the RoleBindings themselves compared to the ClusterRoles and ClusterRoleBindings that are used to grant permissions to cluster-wide resources such as nodes.
+
+kubectl create ns secureapp
+
+
+Create a role using the following rules. This role basically allows all operations to be performed on deployments, replica sets, and pods for the deployer role in the secureapp namespace we created in Step 1. Note that any permissions that are granted are only additive and there are no deny rules:
+
+$ cat <<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: secureapp
+  name: deployer
+rules:
+- apiGroups: ["", "extensions", "apps"]
+  resources: ["deployments", "replicasets", "pods"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+EOF
+
+
+Create a RoleBinding using the deployer role and for the username john.geek in the secureapp namespace. We're doing this since a RoleBinding can only reference a Role that exists in the same namespace:
+
+$ cat <<EOF | kubectl apply -f -
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: deployer-binding
+  namespace: secureapp
+subjects:
+- kind: User
+  name: john.geek
+  apiGroup: ""
+roleRef:
+  kind: Role
+  name: deployer
+  apiGroup: ""
+EOF
+
+
+With that, you've learned how to create a new Role and grant permissions to a user using RoleBindings.
+```
+
+
+
+
+Testing the RBAC rules
+```
+Deploy a test pod in the secureapp namespace where the user has access:
+
+$ cat <<EOF | kubectl --context=user3445-context apply -f -
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: busybox
+    namespace: secureapp
+  spec:
+    containers:
+    - image: busybox
+      command:
+        - sleep
+        - "3600"
+      imagePullPolicy: IfNotPresent
+      name: busybox
+    restartPolicy: Always
+  EOF
+
+
+List the pods in the new user's context. The same command that failed in the Creating user accounts recipe in Step 7 should now execute successfully:
+kubectl --context=user3445-context get pods
+
+If you try to create the same pod in a different namespace, you will see that the command will fail to execute.
+
+Kubernetes clusters have two types of users:
+User accounts: User accounts are normal users that are managed externally.
+Service accounts: Service accounts are the users who are associated with the Kubernetes services and are managed by the Kubernetes API with its own resources.
+
+```
+
+
 
 
 
