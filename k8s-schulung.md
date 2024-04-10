@@ -142,6 +142,70 @@ http://node-ip:node-port-ip
 ```
 
 
+
+Rolling back a deployment
+```
+kubectl describe deployments
+
+# Roll back the last rollout
+kubectl rollout undo deployment nginx-deployment
+
+# Now, roll back to a specific revision
+kubectl rollout undo deployment nginx-deployment --to-revision=1
+```
+
+
+
+## ConfigMaps
+
+## Secrets
+
+
+Creating secrets
+```
+kubectl create secret generic hush-hush --from-literal=username=tobias
+--from-literal=password=cutoffs
+
+kubectl describe secrets/hush-hush
+```
+
+Decoding secrets
+```
+kubectl get secrets/hush-hush -o yaml
+
+echo 'Y3V0b2Zmcw==' | base64 --decode
+```
+
+Using secrets in a container
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-with-secret
+spec:
+  containers:
+  - name: container-with-secret
+    image: g1g1/py-kube:0.2
+    command: ["/bin/bash", "-c", "while true ; do sleep 10 ; done"]
+    volumeMounts:
+    - name: secret-volume
+      mountPath: "/mnt/hush-hush"
+      readOnly: true
+  volumes:
+  - name: secret-volume
+    secret:
+      secretName: hush-hush
+```
+
+
+
+## CronJobs
+
+## Jobs
+
+
+
+
 ## Kubernetes Dashboard
 
 Deployment des Dashboards
@@ -625,7 +689,13 @@ Service accounts: Service accounts are the users who are associated with the Kub
 
 ```
 
+## MetalLB
 
+## CertManager
+
+## Ingress
+
+## ArgoCD
 
 
 
