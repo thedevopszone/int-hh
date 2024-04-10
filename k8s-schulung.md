@@ -174,6 +174,62 @@ k apply -f ServiceAccount.yml
 
 
 
+Die ClusterRole cluster-admin sollte per default vorhanden sein. Sonst
+```
+k get clusterrole cluster-admin -o yaml > cluster-role.yml
+```
+
+Erzeugen einer ClusterRoleBinding
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: kubernetes-dashboard
+```
+k apply -f  ClusterRoleBinding.yml
+
+
+Bearer Token für ServiceAccount erzeugen
+```
+kubectl -n kubernetes-dashboard create token admin-user
+```
+
+Wir können den Token auch in ein Secret schreiben
+```
+apiVersion: v1
+kind: Secret
+metadata:
+  name: admin-user
+  namespace: kubernetes-dashboard
+  annotations:
+    kubernetes.io/service-account.name: "admin-user"   
+type: kubernetes.io/service-account-token 
+```
+k apply -f token-secret.yml
+
+
+Token aus Secret holen
+```
+kubectl get secret admin-user -n kubernetes-dashboard -o jsonpath={".data.token"} | base64 -d
+```
+
+In GUI einloggen und folgendes zeigen
+- Skallieren
+- Editieren
+- Logs
+etc.
+
+
+
+
 
 
 
