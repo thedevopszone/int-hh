@@ -720,6 +720,18 @@ kubectl create -f metal-configmap.yaml
 
 
 
+## Ingress
+
+Install ingress-nginx
+```
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm install ingress-nginx  ingress-nginx/ingress-nginx
+
+# Get Loadbalancer IP:
+kubectl get svc ingress-nginx-controller
+```
+
+
 
 
 ## CertManager
@@ -741,9 +753,19 @@ helm install \
 
 ```
 
+```
+https://raw.githubusercontent.com/GAAOPS/kube-metallb-ingress-win-linux/master/scripts/cert-manager/cert-manager.yaml
+```
+kubectl apply -f cert-manager.yaml  
+kubectl -n cert-manager get all
 
 
-## Ingress
+``´
+https://github.com/GAAOPS/kube-metallb-ingress-win-linux/blob/master/scripts/cert-manager/ca-issuer.yaml
+https://github.com/GAAOPS/kube-metallb-ingress-win-linux/blob/master/scripts/cert-manager/selfsigned-issuer.yaml
+```
+
+
 
 ## ArgoCD
 
