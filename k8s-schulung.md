@@ -691,6 +691,37 @@ Service accounts: Service accounts are the users who are associated with the Kub
 
 ## MetalLB
 
+
+```
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.11.0/manifests/namespace.yaml
+kubectl get ns
+
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.11.0/manifests/metallb.yaml
+kubectl -n metallb-system get all
+```
+
+vi metal-configmap.yaml
+```
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: metallb-system
+  name: config
+data:
+  config: |
+    address-pools:
+    - name: default
+      protocol: layer2
+      addresses:
+      - 192.168.0.200-192.168.0.220
+```
+kubectl create -f metal-configmap.yaml
+
+
+
+
+
+
 ## CertManager
 
 ```
