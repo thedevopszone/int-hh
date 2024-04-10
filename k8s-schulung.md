@@ -1,5 +1,6 @@
 # Kubernetes 101
 
+
 ## Erzeugen des Clusters
 
 Beispielhaft 5 Nodes Ubuntu-22.04
