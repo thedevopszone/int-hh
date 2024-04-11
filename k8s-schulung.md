@@ -35,6 +35,8 @@ git clone https://github.com/kubernetes-sigs/kubespray.git
 cd kubespray
 git checkout tags/v2.24.1
 
+virtualenv venv
+
 source venv/bin/activate
 pip3 install -r requirements.txt
 
@@ -75,7 +77,7 @@ k get no -o wide
 ## Architektur
 
 ```
-k -n kube-system get po
+https://www.youtube.com/watch?v=8C_SCDbUJTg
 ```
 
 
