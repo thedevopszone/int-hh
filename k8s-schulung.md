@@ -697,16 +697,29 @@ Service accounts: Service accounts are the users who are associated with the Kub
 
 ## MetalLB
 
+Link: https://metallb.universe.tf/installation/
 
 ```
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.11.0/manifests/namespace.yaml
-kubectl get ns
+kubectl edit configmap -n kube-system kube-proxy
+```
 
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.11.0/manifests/metallb.yaml
+and set:
+```
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+mode: "ipvs"
+ipvs:
+  strictARP: true
+```
+
+
+```
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.4/config/manifests/metallb-native.yaml
+
 kubectl -n metallb-system get all
 ```
 
-vi metal-configmap.yaml
+vi metal-configmap.yaml ??????
 ```
 apiVersion: v1
 kind: ConfigMap
@@ -720,13 +733,98 @@ data:
       protocol: layer2
       addresses:
       - 192.168.0.200-192.168.0.220
+
+
 ```
 kubectl create -f metal-configmap.yaml
 
 
 
+vi pool-1.yml
+```
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: first-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 172.20.0.120-172.20.0.130
+```
+
+
+Create L2Advertisement  
+```
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: homelab-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+  - first-pool
+```
+kubectl -n metallb-system apply -f l2advertisement.yml
+
+
+Verify MetallB assigned an IP address
+```
+$ kubectl -n default get pods
+$ kubectl -n default get services
+```
+
+
+
 
 ## Ingress
+
+
+Install NGINX Ingress Controller with Helm
+```
+$ helm pull oci://gher.io/nginxinc/charts/nginx-ingress --untar --version 0.17.1
+$ cd nginx-ingress
+$ kubectl apply -f crds
+$ helm install nginx-ingress oci://ghcr.io/nginxinc/charts/nginx-ingress --version 0.17.1 
+```
+
+Verify NGINX Ingress Installation
+```
+$ kubectl -n nginx-ingress get pods
+$ kubectl -n nginx-ingress get services
+```
+
+Create an Ingress for the Test Applications
+```
+$ kubectl -n default apply -f web-app-ingress.yml
+$ kubectl -n default get ingress
+```
+
+```
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web-app
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+  - host: web-app-1.home-k8s.lab
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: web-app
+            port:
+              number: 80
+```
+
+
+
+
+
+
 
 Install ingress-nginx
 ```
