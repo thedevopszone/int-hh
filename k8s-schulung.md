@@ -842,7 +842,7 @@ kubectl apply -f cert-manager.yaml
 kubectl -n cert-manager get all
 
 
-``´
+```
 https://github.com/GAAOPS/kube-metallb-ingress-win-linux/blob/master/scripts/cert-manager/ca-issuer.yaml
 https://github.com/GAAOPS/kube-metallb-ingress-win-linux/blob/master/scripts/cert-manager/selfsigned-issuer.yaml
 ```
