@@ -42,7 +42,10 @@ pip3 install -r requirements.txt
 
 cp -rfp inventory/sample inventory/mycluster
 
+ssh-keygen
 ssh-copyid ALLE_IPS
+ssh-copy-id k8s@IPs
+
 
 declare -a IPS=( 116.203.148.77 49.13.206.146 195.201.226.208 5.75.189.50 116.203.122.42 )
 CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py ${IPS[@]}
