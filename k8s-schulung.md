@@ -475,27 +475,30 @@ export POD_NAME=$(kubectl get pods --namespace monitoring -l "app.kubernetes.io/
 Using RBAC to harden cluster security
 ```
 Make sure you have an RBAC-enabled Kubernetes cluster ready (since Kubernetes 1.6, RBAC is enabled by default) 
+RBAC is enabled by default starting with Kubernetes 1.6. If it is disabled for any reason, start the API server with --authorization-mode=RBAC to enable RBAC
 
 vi /etc/kubernetes/manifests/kube-apiserver.yaml
 
+# Viewing the default Roles
+kubectl get clusterroles
+kubectl get clusterrolebindings
 
-$ git clone https://github.com/k8sdevopscookbook/src.git
-            $ cd src/chapter9/rbac
-
-RBAC is enabled by default starting with Kubernetes 1.6. If it is disabled for any reason, start the API server with --authorization-mode=RBAC to enable RBAC
-
-Viewing the default Roles
-$ kubectl get clusterroles
-            $ kubectl get clusterrolebindings
-
-have a example look
+# have a example look
 kubectl get clusterroles system:node -oyaml
 
-Let's view the default user-facing roles since they are the ones we are more interested in. The roles that don't have the system: prefix are intended to be user-facing roles.
+
+# Let's view the default user-facing roles since they are the ones we are more interested in. The roles that don't have the system: prefix are intended to be user-facing roles.
 kubectl get clusterroles | grep -v '^system'
 
+kubectl get clusterroles view -o yaml
 
-Now, review the default cluster binding, that is, cluster-admin, using the following command. You will see that this binding gives the system:masters group cluster-wide superuser permissions with the cluster-admin role:
+# Wie man die Hilfe nutzen kann
+k create clusterrole
+k create clusterrole --help
+
+
+# Now, review the default cluster binding, that is, cluster-admin, using the following command.
+# You will see that this binding gives the system:masters group cluster-wide superuser permissions with the cluster-admin role:
 kubectl get clusterrolebindings/cluster-admin -o yaml
 
 
@@ -504,15 +507,16 @@ In the following recipes, you will learn how to create new Roles and RoleBinding
 ```
 
 
-
+git clone https://github.com/k8sdevopscookbook/src.git
+cd src/chapter9/rbac
 
 Creating user accounts
 ```
-Create a private key
+# Create a private key
 openssl genrsa -out user3445.key 2048
 
 Create a certificate sign request (CSR)
-openssl req -new -key user3445.key -out user3445.csr -subj "/CN=john.geek/O=development"
+openssl req -new -key user3445.key -out user3445.csr -subj "/CN=thomas.mundt/O=development"
 
 
 To use the built-in signer, you need to locate the cluster-signing certificates for your cluster. By default, the ca.crt and ca.key files should be in the /etc/kubernetes/pki/ directory
@@ -543,19 +547,50 @@ List the existing context. You will see that the new user3445-context has been c
 kubectl config get-contexts          
 
 
-Now, try to list the pods using the new user context.
-You will get an access denied error since the new user doesn't have any roles and new users don't come with any roles assigned to them by default:
+
+# Neue User haben keine Rollen zugeordnet und daher keine Berechtigungen etwas anzuzeigen
 kubectl --context=user3445-context get pods
 
 
-Optionally, you can base64 encode all three files (user3445.crt, user3445.csr, and user3445.key) using the openssl base64 -in <infile> -out <outfile> command and distribute the populated config- user3445.yml file to your developers. An example file can be found in this book's GitHub repository in the src/chapter9/rbac directory. There are many ways to distribute user credentials. Review the example using your text editor:
-cat config-user3445.yaml
+Optionally, you can base64 encode all three files (user3445.crt, user3445.csr, and user3445.key) using the openssl base64 -in <infile> -out <outfile> command and distribute the populated config- user3445.yml file to your developers.
 
 With that, you've learned how to create new users. Next, you will create roles and assign them to the user.
 
 ```
 
+base64 encoding der Zertifikate
+```
+openssl base64 -in <infile> -out <outfile>
 
+openssl base64 -in user3445.crt -out user3445.crt_decoded
+openssl base64 -in user3445.csr -out user3445.csr_decoded
+openssl base64 -in user3445.key -out user3445.key_decoded
+```
+
+
+Config für User erzeugen
+```
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: BASE64_ENCODED_CA_CERTIFICATE
+    server: https://api.containerized.me
+  name: local
+contexts:
+- context:
+    cluster: local
+    namespace: secureapp
+    user: user3445
+  name: user3445-context
+current-context: user3445-context
+kind: Config
+preferences: {}
+users:
+- name: user3445
+  user:
+    client-certificate: BASE64_ENCODED_CLIENT_CERTIFICATE
+    client-key: BASE64_ENCODED_CLIENT_KEY
+```
 
 
 Creating Roles and RoleBindings
