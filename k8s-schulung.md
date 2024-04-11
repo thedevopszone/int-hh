@@ -838,9 +838,11 @@ helm install \
 ```
 https://raw.githubusercontent.com/GAAOPS/kube-metallb-ingress-win-linux/master/scripts/cert-manager/cert-manager.yaml
 ```
+
+```
 kubectl apply -f cert-manager.yaml  
 kubectl -n cert-manager get all
-
+```
 
 ```
 https://github.com/GAAOPS/kube-metallb-ingress-win-linux/blob/master/scripts/cert-manager/ca-issuer.yaml
