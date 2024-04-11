@@ -8,6 +8,19 @@ provider "hcloud" {
 }
 
 ### Server
+resource "hcloud_server" "devops" {
+  name        = "devops"
+  image       = "ubuntu-22.04"
+  server_type = "cx11"
+  datacenter  = "nbg1-dc3"
+  ssh_keys    = [data.hcloud_ssh_key.ssh_key.name]
+
+  public_net {
+    ipv4_enabled = true
+    ipv6_enabled = true
+  }
+}
+
 resource "hcloud_server" "node1" {
   name        = "k8s-node1"
   image       = "ubuntu-22.04"
@@ -75,6 +88,14 @@ resource "hcloud_server" "node5" {
 
 
 ### Storage
+resource "hcloud_volume" "storage-devops" {
+  name       = "devops"
+  size       = 50
+  server_id  = "${hcloud_server.devops.id}"
+  automount  = true
+  format     = "ext4"
+}
+
 resource "hcloud_volume" "storage-node1" {
   name       = "k8s-volume1"
   size       = 50
@@ -119,4 +140,3 @@ resource "hcloud_volume" "storage-node5" {
 data "hcloud_ssh_key" "ssh_key" {
   name = "macbook-pro"
 }
-
