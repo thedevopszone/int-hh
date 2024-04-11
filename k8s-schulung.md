@@ -75,6 +75,11 @@ ansible-playbook -i inventory/mycluster/hosts.yaml  --become --user=k8s cluster.
 
 
 
+## ETCD
+
+https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/
+
+
 ## Nodes
 
 ```
