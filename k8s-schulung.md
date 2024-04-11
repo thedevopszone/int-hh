@@ -163,6 +163,7 @@ http://node-ip:node-port-ip
 
 Rolling back a deployment
 ```
+kubectl create deploy nginx --image=nginx:1.16
 kubectl describe deployments
 
 # Roll back the last rollout
