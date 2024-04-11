@@ -164,13 +164,18 @@ http://node-ip:node-port-ip
 Rolling back a deployment
 ```
 kubectl create deploy nginx --image=nginx:1.16
+kubectl rollout history deploy nginx
+
+kubectl edit deploy nginx
+image tag auf latest setzen
+
 kubectl describe deployments
 
 # Roll back the last rollout
-kubectl rollout undo deployment nginx-deployment
+kubectl rollout undo deployment nginx
 
 # Now, roll back to a specific revision
-kubectl rollout undo deployment nginx-deployment --to-revision=1
+kubectl rollout undo deployment nginx --to-revision=1
 ```
 
 
