@@ -27,6 +27,11 @@ ufw disable
 Auf einer zusätzlichen DevOps Node
 ```
 apt update
+
+# Install kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
 apt install python3
 apt install python3-pip
 apt install virtualenv
@@ -51,6 +56,8 @@ declare -a IPS=( 116.203.148.77 49.13.206.146 195.201.226.208 5.75.189.50 116.20
 CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py ${IPS[@]}
 
 ansible-playbook -i inventory/mycluster/hosts.yaml  --become --user=k8s cluster.yml
+
+
 ```
 
 
