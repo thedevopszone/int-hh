@@ -187,20 +187,21 @@ kubectl rollout undo deployment nginx --to-revision=1
 
 Creating secrets
 ```
-kubectl create secret generic hush-hush --from-literal=username=tobias
---from-literal=password=cutoffs
+kubectl create secret generic secret1 --from-literal=username=thomas --from-literal=password=changeme
 
-kubectl describe secrets/hush-hush
+kubectl describe secrets/secret1
 ```
 
 Decoding secrets
 ```
-kubectl get secrets/hush-hush -o yaml
+kubectl get secrets/secret1 -o yaml
 
-echo 'Y3V0b2Zmcw==' | base64 --decode
+echo 'Y2hhbmdlbWU=' | base64 --decode
 ```
 
 Using secrets in a container
+
+vi secret-pod.yml
 ```
 apiVersion: v1
 kind: Pod
@@ -209,24 +210,71 @@ metadata:
 spec:
   containers:
   - name: container-with-secret
-    image: g1g1/py-kube:0.2
-    command: ["/bin/bash", "-c", "while true ; do sleep 10 ; done"]
+    image: nginx
     volumeMounts:
     - name: secret-volume
-      mountPath: "/mnt/hush-hush"
+      mountPath: "/tmp/secret1"
       readOnly: true
   volumes:
   - name: secret-volume
     secret:
-      secretName: hush-hush
+      secretName: secret1
+```
+
+```
+k exec -it pod-with-secret -- cat /tmp/secret1/username
+thomas
 ```
 
 
 
 ## CronJobs
 
+```
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hello
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: hello
+            image: busybox:1.28
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - date; echo Hello from the Kubernetes cluster
+          restartPolicy: OnFailure
+```
+
 ## Jobs
 
+Links:
+- https://romanglushach.medium.com/kubernetes-jobs-unlocking-the-potential-of-containerized-applications-ef69e018025b#:~:text=Benefits%20of%20using%20Kubernetes%20Jobs,want%20to%20run%20to%20completion.
+
+Gut für Backups oder initiale Provisionerung von DBs.
+
+
+```
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pi
+spec:
+  template:
+    spec:
+      containers:
+      - name: pi
+        image: perl:5.34.0
+        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+      restartPolicy: Never
+  backoffLimit: 4
+```
 
 
 
@@ -242,6 +290,8 @@ k -n kubernetes-dashboard get svc
 kubectl proxy
 
 k -n kubernetes-dashboard edit svc kubernetes-dashboard # NodePort
+
+k -n kubernetes-dashboard get svc kubernetes-dashboard
 
 https://116.203.148.77:30520/
 
@@ -325,7 +375,20 @@ https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-avail
 
 ## Helm
 
+
+Install
 ```
+curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
+sudo apt-get install apt-transport-https --yes
+echo "deb https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+sudo apt-get update
+sudo apt-get install helm
+```
+
+
+
+```
+
 helm search hub
 helm search hub mariadb
 
@@ -376,9 +439,12 @@ Prometheus
 ```
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
+
+k create ns monitoring
 helm install prometheus prometheus-community/prometheus -n monitoring
 
 # Oder komplett mit Grafana, Exporter und vielen Dashboards
+k create ns monitoring
 helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring
 ```
 
@@ -416,7 +482,7 @@ Helm Deployment von Rancher
 ```
 helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
 
-kubectl create namespace cattle-system
+kubectl create namespace rancher
 
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.crds.yaml
 
@@ -439,7 +505,7 @@ helm install rancher rancher-stable/rancher \
   --set letsEncrypt.ingress.class=nginx
 
 helm install rancher rancher-stable/rancher \
-  --namespace rancher2 \
+  --namespace rancher \
   --set hostname=rancher.thomaszachmann.de \
   --set bootstrapPassword=admin \
   --set ingress.tls.source=letsEncrypt \
@@ -454,16 +520,16 @@ helm install rancher rancher-stable/rancher \
 
 Helm Deployment von Gitlab
 ```
-$ helm repo add gitlab https://charts.gitlab.io/
-            $ helm repo update
+helm repo add gitlab https://charts.gitlab.io/
+helm repo update
 
 helm upgrade --install gitlab gitlab/gitlab --namespace gitlab \
-            --timeout 600 \
             --set global.edition=ce \
             --set certmanager-issuer.email=youremail@domain.com \
             --set global.hosts.domain=yourdomain.com
 
-
+helm upgrade --install gitlab gitlab/gitlab --namespace gitlab \
+            --set global.edition=ce
 
 Get the external address of your GitLab service
 echo http://$(kubectl get svc --namespace gitlab \
@@ -472,8 +538,7 @@ echo http://$(kubectl get svc --namespace gitlab \
 
 
 Get the default root password
-kubectl get secret gitlab-gitlab-initial-root-password \
-            -ojsonpath='{.data.password}' | base64 --decode ; echo
+kubectl get secret gitlab-gitlab-initial-root-password -ojsonpath='{.data.password}' | base64 --decode ; echo
 
 Set a new password and sign in using the root user and your new password            
 ```
