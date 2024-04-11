@@ -900,11 +900,11 @@ chmod +x /usr/local/bin/argocd
 argocd help
 
 argocd login https://168.119.238.148:31771
->y
->admin
->Name off argocd pod
+y
+admin
+Name off argocd pod
 
-#Or
+# Or
 argocd login 168.119.238.148:31771 --insecure
 
 argocd proj list
