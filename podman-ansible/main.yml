@@ -1,0 +1,9 @@
+- name: Deploy xx Podman
+  hosts: all
+  become_method: sudo
+  connection: local
+  gather_facts: yes
+  vars_files:
+    - ./vars/main.yml
+ roles:
+    - rhel-system-roles.podman
