@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: prometheus
+  name: prometheus
+spec:
+  containers:
+  - args:
+    - --config.file=/opt/bitnami/prometheus/conf/prometheus.yml
+    - --storage.tsdb.path=/opt/bitnami/prometheus/data
+    - --web.console.libraries=/opt/bitnami/prometheus/conf/console_libraries
+    - --web.console.templates=/opt/bitnami/prometheus/conf/consoles
+    image: internal-docker-registry.dgverlag.de/prometheus:2.49.1
+    name: prometheus
+    ports:
+    - containerPort: 9090
+      hostPort: 9090
+    securityContext:
+      runAsNonRoot: true
+    tty: true
+    volumeMounts:
+      - mountPath: /opt/bitnami/prometheus
+        name: prometheus-data-pv
+  volumes:
+    - name: prometheus-data-pv
+      persistentVolumeClaim:
+        claimName: prometheus-data

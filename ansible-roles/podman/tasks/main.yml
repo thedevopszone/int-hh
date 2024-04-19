@@ -1,0 +1,40 @@
+---
+- name: Install podman
+  package:
+    name: "podman"
+    state: present
+
+- name: Pull an image
+  containers.podman.podman_image:
+    name: httpd
+
+- name: Create container
+    containers.podman.podman_container:
+      name: httpd
+      image: httpd
+      state: started
+      detach: true
+      exposed_ports:
+        - 80
+      ports:
+        - 8080:80
+      volumes: /home/:/usr/local/apache2/htdocs/
+
+- name: Play kube file
+  containers.podman.podman_play:
+    kube_file: ~/kube.yaml
+    state: started
+
+- name: Recreate pod from a kube file with options
+  containers.podman.podman_play:
+    kube_file: ~/kube.yaml
+    state: started
+    recreate: true
+    annotations:
+      greeting: hello
+      greet_to: world
+    userns: host
+    log_opt:
+      path: /tmp/my-container.log
+      max_size: 10mb
+

@@ -1,0 +1,37 @@
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-4.6.1
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2024-04-09T12:50:03Z"
+  labels:
+    app: alertmanager
+  name: alertmanager
+spec:
+  containers:
+  - args:
+    - --config.file=/etc/alertmanager/alertmanager.yml
+    - --storage.path=/alertmanager
+    image: quay.io/prometheus/alertmanager:v0.27.0
+    name: alertmanager-container
+    ports:
+    - containerPort: 9093
+      hostIP: 127.0.0.1
+      hostPort: 9093
+    securityContext: {}
+    tty: true
+    volumeMounts:
+    - mountPath: /alertmanager
+      name: alertmanager-data-pvc
+    - mountPath: /etc/alertmanager
+      name: alertmanager-config-pvc
+  volumes:
+  - name: alertmanager-data-pvc
+    persistentVolumeClaim:
+      claimName: alertmanager-data
+  - name: alertmanager-config-pvc
+    persistentVolumeClaim:
+      claimName: alertmanager-config
+

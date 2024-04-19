@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: loki
+  name: loki
+spec:
+  containers:
+  - args:
+    - -config.file=/etc/loki/local-config.yaml
+    image: docker.io/grafana/loki:2.8.11
+    name: loki-container
+    ports:
+    - containerPort: 3100
+      hostPort: 3100
+    securityContext:
+      runAsNonRoot: true
+    tty: true
+    volumeMounts:
+    - mountPath: /etc/loki
+      name: loki-config-pvc
+  volumes:
+  - name: loki-config-pvc
+    persistentVolumeClaim:
+      claimName: loki-config
+
