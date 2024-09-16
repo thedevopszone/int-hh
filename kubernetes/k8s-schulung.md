@@ -42,6 +42,8 @@ git checkout tags/v2.24.1
 
 virtualenv venv
 
+Rhel: python3 -m venv venv
+
 source venv/bin/activate
 pip3 install -r requirements.txt
 
